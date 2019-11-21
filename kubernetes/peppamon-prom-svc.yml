@@ -3,9 +3,9 @@ kind: Service
 metadata:
   creationTimestamp: null
   labels:
-    app: peppamon-collector-prom
-    name: peppamon-collector-prom
-  name: peppamon-collector-prom
+    app: peppamon-versa-collector-prom
+    name: peppamon-versa-collector-prom
+  name: peppamon-versa-collector-prom
   namespace: monitoring
 spec:
   ports:
@@ -14,7 +14,7 @@ spec:
       targetPort: 2112
       name: prom      
   selector:
-    app: peppamon-collector
+    app: peppamon-versa-collector
   type: ClusterIP
 status:
   loadBalancer: {}

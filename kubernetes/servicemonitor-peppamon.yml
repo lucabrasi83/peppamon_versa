@@ -3,9 +3,9 @@ kind: ServiceMonitor
 metadata:
   generation: 1
   labels:
-    app: peppamon-collector
+    app: peppamon-versa-collector
     release: peppamon-operator
-  name: peppamon-collector
+  name: peppamon-versa-collector
   namespace: monitoring
 spec:
   endpoints:
@@ -16,4 +16,4 @@ spec:
     - monitoring
   selector:
     matchLabels:
-      name: peppamon-collector-prom
+      name: peppamon-versa-collector-prom

@@ -1,7 +1,11 @@
 package main
 
 import (
+	"context"
 	"net/http"
+	"os"
+	"os/signal"
+	"time"
 
 	"github.com/lucabrasi83/peppamon_versa/initializer"
 	"github.com/lucabrasi83/peppamon_versa/logging"
@@ -22,12 +26,20 @@ func main() {
 
 	initializer.Initialize()
 
+	// Channel to handle graceful shutdown of GRPC Server
+	ch := make(chan os.Signal, 1)
+
+	// Write in Channel in case of OS request to shut process
+	signal.Notify(ch, os.Interrupt)
+
 	promHTTPSrv := http.Server{Addr: ":2112"}
 
-	http.Handle("/metrics", promhttp.Handler())
+	// Start Prometheus HTTP handler
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		_, errWelcomePage := w.Write([]byte(`<html>
+		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			_, errWelcomePage := w.Write([]byte(`<html>
              <head><title>Peppamon Versa Analytics Exporter</title></head>
              <body>
              <h1>Peppamon Versa Analytics Telemetry Exporter</h1>
@@ -35,18 +47,36 @@ func main() {
              </body>
              </html>`))
 
-		if errWelcomePage != nil {
+			if errWelcomePage != nil {
+				logging.PeppaMonLog(
+					"error",
+					"Failed to render Welcome page %v", errWelcomePage)
+			}
+		})
+
+		logging.PeppaMonLog("info", "Starting Prometheus metrics web handler for Versa on port TCP 2112...")
+
+		if err := promHTTPSrv.ListenAndServe(); err != http.ErrServerClosed {
 			logging.PeppaMonLog(
-				"error",
-				"Failed to render Welcome page %v", errWelcomePage)
+				"fatal",
+				"Failed to start Prometheus HTTP metrics handler %v", err)
 		}
-	})
+	}()
 
-	logging.PeppaMonLog("info", "Starting Prometheus metrics web handler for Versa on port TCP 2112...")
+	// Block main function from exiting until ch receives value
+	<-ch
+	logging.PeppaMonLog("warning", "Shutting down Peppamon server...")
 
-	if err := promHTTPSrv.ListenAndServe(); err != http.ErrServerClosed {
+	// Stop Prom HTTP server
+	ctxPromHTTP, ctxCancel := context.WithTimeout(context.Background(), 3*time.Second)
+
+	defer ctxCancel()
+
+	errPromHTTPShut := promHTTPSrv.Shutdown(ctxPromHTTP)
+
+	if errPromHTTPShut != nil {
 		logging.PeppaMonLog(
-			"fatal",
-			"Failed to start Prometheus HTTP metrics handler %v", err)
+			"warning",
+			"Error while shutting down Prometheus HTTP Server %v", errPromHTTPShut)
 	}
 }
