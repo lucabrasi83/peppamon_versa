@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: peppamon-versa-collector
+  name: peppamon-versa-collector
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: peppamon-versa-collector
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: peppamon-versa-collector
+    spec:
+      containers:
+      - image: tatacomm/peppamon-versa-collector:beta
+        name: peppamon-versa-collector
+        imagePullPolicy: Always
+        stdin: true 
+        tty: true
+        ports:
+        - containerPort: 2112
+        env:
+            - name: PEPPAMON_VERSA_ANALYTICS_HOSTNAME
+              valueFrom:
+                secretKeyRef:
+                  name: peppamon-versa-collector-secrets
+                  key: PEPPAMON_VERSA_ANALYTICS_HOSTNAME
+            - name: PEPPAMON_VERSA_ANALYTICS_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: peppamon-versa-collector-secrets
+                  key: PEPPAMON_VERSA_ANALYTICS_USERNAME
+            - name: PEPPAMON_VERSA_ANALYTICS_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: peppamon-versa-collector-secrets
+                    key: PEPPAMON_VERSA_ANALYTICS_PASSWORD
+
+        resources:
+          limits:
+            cpu: "2"
+            memory: 2Gi
+          requests:
+            cpu: "1"
+            memory: 1Gi
+      imagePullSecrets:
+        - name: docker-secret
+status: {}

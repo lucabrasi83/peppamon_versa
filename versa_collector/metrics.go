@@ -3,6 +3,20 @@ package versa_collector
 import "github.com/prometheus/client_golang/prometheus"
 
 var (
+	metricsDesc = []*prometheus.Desc{
+		versaSitesAvailabilityPercent,
+		versaApplicationUsageBandwidthRxBps,
+		versaApplicationUsageBandwidthTxBps,
+		versaApplicationUsageVolumeRxByte,
+		versaApplicationUsageVolumeTxByte,
+		versaSiteCircuitBandwidthUsageTxBps,
+		versaSiteCircuitBandwidthUsageRxBps,
+		versaApplianceCPULoadPercent,
+		versaApplianceMemoryLoadPercent,
+		versaApplianceDiskLoadPercent,
+		versaApplianceSessionsLoad,
+	}
+
 	versaSitesAvailabilityPercent = prometheus.NewDesc(
 		"versa_analytics_sites_availability_percent",
 		"The availability percentage for the particular site",

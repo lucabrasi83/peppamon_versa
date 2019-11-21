@@ -30,8 +30,8 @@ func NewVersaAnalyticsExporter() *VersaAnalyticsExporter {
 
 func (v *VersaAnalyticsExporter) Describe(ch chan<- *prometheus.Desc) {
 
-	for _, desc := range v.Metrics {
-		ch <- desc.Desc()
+	for _, desc := range metricsDesc {
+		ch <- desc
 	}
 }
 
@@ -68,7 +68,7 @@ func (v *VersaAnalyticsExporter) Collect(ch chan<- prometheus.Metric) {
 
 func (v *VersaAnalyticsExporter) launchMetricsCollection() {
 	var wg sync.WaitGroup
-	wg.Add(4)
+	wg.Add(5)
 
 	go func() {
 		defer wg.Done()
@@ -78,6 +78,11 @@ func (v *VersaAnalyticsExporter) launchMetricsCollection() {
 	go func() {
 		defer wg.Done()
 		v.versaApplicationUsageRateMetric()
+	}()
+
+	go func() {
+		defer wg.Done()
+		v.versaApplicationUsageVolumeMetric()
 	}()
 
 	go func() {
