@@ -10,6 +10,7 @@ metadata:
 spec:
   endpoints:
     - interval: 5m
+      scrapeTimeout: 5m
       path: /metrics
       port: prom
       relabelings:

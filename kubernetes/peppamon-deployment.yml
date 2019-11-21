@@ -38,10 +38,10 @@ spec:
                   name: peppamon-versa-collector-secrets
                   key: PEPPAMON_VERSA_ANALYTICS_USERNAME
             - name: PEPPAMON_VERSA_ANALYTICS_PASSWORD
-                valueFrom:
-                  secretKeyRef:
-                    name: peppamon-versa-collector-secrets
-                    key: PEPPAMON_VERSA_ANALYTICS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: peppamon-versa-collector-secrets
+                  key: PEPPAMON_VERSA_ANALYTICS_PASSWORD
 
         resources:
           limits:
