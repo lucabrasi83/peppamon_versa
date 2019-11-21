@@ -9,8 +9,17 @@ metadata:
   namespace: monitoring
 spec:
   endpoints:
-  - port: prom
-    path: /metrics
+    - interval: 5m
+      path: /metrics
+      port: prom
+      relabelings:
+        - action: labeldrop
+          regex: ^pod$
+        - regex: .*
+          replacement: peppamon-collector-versa
+          sourceLabels:
+          - __address__
+          targetLabel: instance
   namespaceSelector:
     matchNames:
     - monitoring
