@@ -638,7 +638,7 @@ func (v *VersaAnalyticsClient) GetSitesSLAMetrics() ([]VersaSiteSLAMetrics, erro
 	}
 	wg.Wait()
 
-	logging.PeppaMonLog("info", "Completed Batch Job to fetch Site Circuits Usage Metrics")
+	logging.PeppaMonLog("info", "Completed Batch Job to fetch Site SLA Metrics")
 	return metricsIPSLASlice, nil
 }
 
