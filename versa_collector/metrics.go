@@ -15,6 +15,11 @@ var (
 		versaApplianceMemoryLoadPercent,
 		versaApplianceDiskLoadPercent,
 		versaApplianceSessionsLoad,
+		versaSLADelay,
+		versaSLAJitterFwd,
+		versaSLAJitterRev,
+		versaSLALossFwd,
+		versaSLALossRev,
 	}
 
 	versaSitesAvailabilityPercent = prometheus.NewDesc(
@@ -91,6 +96,38 @@ var (
 		"versa_analytics_appliance_sessions_load",
 		"The appliance current sessions",
 		[]string{"tenant", "site"},
+		nil,
+	)
+
+	versaSLADelay = prometheus.NewDesc(
+		"versa_analytics_site_slam_delay_ms",
+		"The SLA probe delay reported in milliseconds",
+		[]string{"tenant", "site", "source_site", "destination_site", "source_circuit", "destination_circuit"},
+		nil,
+	)
+
+	versaSLAJitterFwd = prometheus.NewDesc(
+		"versa_analytics_site_slam_jitter_fwd_ms",
+		"The SLA probe forward jitter reported in milliseconds",
+		[]string{"tenant", "site", "source_site", "destination_site", "source_circuit", "destination_circuit"},
+		nil,
+	)
+	versaSLAJitterRev = prometheus.NewDesc(
+		"versa_analytics_site_slam_jitter_rcv_ms",
+		"The SLA probe reverse jitter reported in milliseconds",
+		[]string{"tenant", "site", "source_site", "destination_site", "source_circuit", "destination_circuit"},
+		nil,
+	)
+	versaSLALossFwd = prometheus.NewDesc(
+		"versa_analytics_site_slam_loss_fwd_pct",
+		"The SLA probe forward loss reported in percent",
+		[]string{"tenant", "site", "source_site", "destination_site", "source_circuit", "destination_circuit"},
+		nil,
+	)
+	versaSLALossRev = prometheus.NewDesc(
+		"versa_analytics_site_slam_loss_rcv_pct",
+		"The SLA probe reverse loss reported in percent",
+		[]string{"tenant", "site", "source_site", "destination_site", "source_circuit", "destination_circuit"},
 		nil,
 	)
 )

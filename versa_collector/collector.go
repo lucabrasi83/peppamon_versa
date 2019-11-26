@@ -1,6 +1,7 @@
 package versa_collector
 
 import (
+	"regexp"
 	"strings"
 	"sync"
 
@@ -68,7 +69,7 @@ func (v *VersaAnalyticsExporter) Collect(ch chan<- prometheus.Metric) {
 
 func (v *VersaAnalyticsExporter) launchMetricsCollection() {
 	var wg sync.WaitGroup
-	wg.Add(5)
+	wg.Add(6)
 
 	go func() {
 		defer wg.Done()
@@ -93,6 +94,11 @@ func (v *VersaAnalyticsExporter) launchMetricsCollection() {
 	go func() {
 		defer wg.Done()
 		v.versaApplianceComputeUsageMetric()
+	}()
+
+	go func() {
+		defer wg.Done()
+		v.versaSiteSLAMetrics()
 	}()
 
 	wg.Wait()
@@ -354,6 +360,95 @@ func (v *VersaAnalyticsExporter) versaApplianceComputeUsageMetric() {
 					prometheus.GaugeValue,
 					performanceUsageMetric,
 					tenant.TenantName, siteName,
+				)
+				v.mu.Lock()
+				v.Metrics = append(v.Metrics, metric)
+				v.mu.Unlock()
+			}
+
+		}
+	}
+}
+
+func (v *VersaAnalyticsExporter) versaSiteSLAMetrics() {
+	slaMetrics, err := v.VersaAnalyticsClient.GetSitesSLAMetrics()
+
+	if err != nil {
+		return
+	}
+
+	for _, tenant := range slaMetrics {
+		for _, siteUsage := range tenant.Data {
+
+			// Only insert IP SLA for Controllers and Service Gateway
+			ctrlRegexp := regexp.MustCompile(`^CTLR-.+`).MatchString(siteUsage.Name)
+			cgwRegexp := regexp.MustCompile(`.*[-_]cgw.*`).MatchString(siteUsage.Name)
+
+			if !ctrlRegexp || !cgwRegexp {
+				continue
+			}
+
+			metricTokens := strings.Split(siteUsage.Name, ",")
+
+			sourceSite := metricTokens[0]
+			destinationSite := metricTokens[1]
+			sourceCircuit := metricTokens[2]
+			destinationCircuit := metricTokens[3]
+
+			metricValue := siteUsage.Data[0][1].(float64)
+
+			switch siteUsage.Metric {
+			case "fwdLossRatio":
+				metric :=
+					prometheus.MustNewConstMetric(
+						versaSLALossFwd,
+						prometheus.GaugeValue,
+						metricValue,
+						tenant.TenantName, sourceSite, destinationSite, sourceCircuit, destinationCircuit,
+					)
+				v.mu.Lock()
+				v.Metrics = append(v.Metrics, metric)
+				v.mu.Unlock()
+
+			case "revLossRatio":
+				metric := prometheus.MustNewConstMetric(
+					versaSLALossRev,
+					prometheus.GaugeValue,
+					metricValue,
+					tenant.TenantName, sourceSite, destinationSite, sourceCircuit, destinationCircuit,
+				)
+				v.mu.Lock()
+				v.Metrics = append(v.Metrics, metric)
+				v.mu.Unlock()
+
+			case "fwdDelayVar":
+				metric := prometheus.MustNewConstMetric(
+					versaSLAJitterFwd,
+					prometheus.GaugeValue,
+					metricValue,
+					tenant.TenantName, sourceSite, destinationSite, sourceCircuit, destinationCircuit,
+				)
+				v.mu.Lock()
+				v.Metrics = append(v.Metrics, metric)
+				v.mu.Unlock()
+
+			case "revDelayVar":
+				metric := prometheus.MustNewConstMetric(
+					versaSLAJitterRev,
+					prometheus.GaugeValue,
+					metricValue,
+					tenant.TenantName, sourceSite, destinationSite, sourceCircuit, destinationCircuit,
+				)
+				v.mu.Lock()
+				v.Metrics = append(v.Metrics, metric)
+				v.mu.Unlock()
+
+			case "delay":
+				metric := prometheus.MustNewConstMetric(
+					versaSLADelay,
+					prometheus.GaugeValue,
+					metricValue,
+					tenant.TenantName, sourceSite, destinationSite, sourceCircuit, destinationCircuit,
 				)
 				v.mu.Lock()
 				v.Metrics = append(v.Metrics, metric)

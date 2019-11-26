@@ -66,6 +66,19 @@ type VersaApplicationUsageVolume struct {
 	} `json:"data"`
 }
 
+type VersaSiteSLAMetrics struct {
+	TenantName string
+	QTime      int `json:"qTime"`
+	Data       []struct {
+		Name       string          `json:"name"`
+		Type       string          `json:"type"`
+		Metric     string          `json:"metric"`
+		MetricName string          `json:"metricName"`
+		Label      string          `json:"label"`
+		Data       [][]interface{} `json:"data"`
+	} `json:"data"`
+}
+
 type VersaSiteBandwidthUsage struct {
 	TenantName string
 	QTime      int `json:"qTime"`
@@ -215,7 +228,9 @@ func (v *VersaAnalyticsClient) GetSitesAvailability() ([]VersaSitesAvailability,
 			defer wg.Done()
 
 			url := fmt.Sprintf("%s://%s/versa/analytics/v1.0."+
-				"0/data/provider/tenants/%s/features/SDWAN/?qt=stats&start-date=today&q=site&metrics=availability"+
+				"0/data/provider/tenants/%s/features/SDWAN/?qt=stats&start-date=5minutesAgo&end-date=today&q=site"+
+				"&metrics"+
+				"=availability"+
 				"&count=-1", v.Protocol, v.Hostname, t.TenantName)
 
 			queryTitle := "Get Sites Availability"
@@ -542,6 +557,89 @@ func (v *VersaAnalyticsClient) GetSitesCircuitBandwidthUsage() ([]VersaSiteBandw
 
 	logging.PeppaMonLog("info", "Completed Batch Job to fetch Site Circuits Usage Metrics")
 	return applicationUsageSlice, nil
+}
+
+func (v *VersaAnalyticsClient) GetSitesSLAMetrics() ([]VersaSiteSLAMetrics, error) {
+
+	logging.PeppaMonLog("info", "Started Batch Job to fetch Site SLA Metrics")
+
+	var wg sync.WaitGroup
+	wg.Add(len(v.Tenants))
+
+	var mu sync.Mutex
+
+	metricsIPSLASlice := make([]VersaSiteSLAMetrics, 0, len(v.Tenants))
+
+	for _, tenant := range v.Tenants {
+
+		go func(t struct{ TenantName string }) {
+
+			defer wg.Done()
+
+			url := fmt.Sprintf("%s://%s/versa/analytics/v1.0."+
+				"0/data/provider/tenants/%s/features/SDWAN/?start-date=%s&end-date=today&q=slam(localSite,remoteSite,"+
+				"localAccCkt,remoteAccCkt)&qt=timeseries&gap=1MINUTE&ds=aggregate&metrics=fwdDelayVar&metrics"+
+				"=revDelayVar&metrics=delay&count=-1&metrics=fwdLossRatio&metrics=revLossRatio",
+				v.Protocol, v.Hostname, t.TenantName, longReportPrecision)
+
+			queryTitle := "Get Site SLA Metrics"
+
+			httpNewReq, err := http.NewRequest("GET", url, nil)
+
+			if err != nil {
+				logging.PeppaMonLog("error", "unable to build HTTP request for %v with error %v", queryTitle, err)
+				return
+
+			}
+
+			httpNewReq.Header.Add("Content-Type", "application/json")
+
+			tenantsRes, err := v.HttpClient.Do(httpNewReq)
+
+			if err != nil {
+				logging.PeppaMonLog("error", "HTTP request for %v failed with error %v", queryTitle, err)
+				return
+
+			}
+
+			if tenantsRes.StatusCode != http.StatusOK || tenantsRes.StatusCode > http.StatusAccepted {
+				logging.PeppaMonLog("error", "Versa Analytics responded with HTTP error code %v for %v",
+					tenantsRes.StatusCode, queryTitle)
+			}
+
+			defer func() {
+
+				errBodyClose := tenantsRes.Body.Close()
+
+				if errBodyClose != nil {
+					logging.PeppaMonLog("error", "HTTP request for %v failed with error %v", queryTitle, err)
+					return
+				}
+			}()
+
+			var tenantIPSLAMetrics VersaSiteSLAMetrics
+
+			err = json.NewDecoder(tenantsRes.Body).Decode(&tenantIPSLAMetrics)
+
+			if err != nil {
+				logging.PeppaMonLog("error", "Unable to decode JSON response from %v with error %v", queryTitle, err)
+				return
+
+			}
+
+			tenantIPSLAMetrics.TenantName = t.TenantName
+
+			mu.Lock()
+			metricsIPSLASlice = append(metricsIPSLASlice, tenantIPSLAMetrics)
+			mu.Unlock()
+
+		}(struct{ TenantName string }(tenant))
+
+	}
+	wg.Wait()
+
+	logging.PeppaMonLog("info", "Completed Batch Job to fetch Site Circuits Usage Metrics")
+	return metricsIPSLASlice, nil
 }
 
 func (v *VersaAnalyticsClient) GetApplianceComputePerf() ([]VersaAppliancePerformance, error) {

@@ -9,7 +9,7 @@ metadata:
   namespace: monitoring
 spec:
   endpoints:
-    - interval: 5m
+    - interval: 1m
       scrapeTimeout: 5m
       path: /metrics
       port: prom
