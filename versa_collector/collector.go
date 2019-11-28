@@ -380,18 +380,19 @@ func (v *VersaAnalyticsExporter) versaSiteSLAMetrics() {
 	for _, tenant := range slaMetrics {
 		for _, siteUsage := range tenant.Data {
 
-			// Only insert IP SLA for Controllers and Service Gateway
-			ctrlRegexp := regexp.MustCompile(`^CTLR-.+`).MatchString(siteUsage.Name)
-			cgwRegexp := regexp.MustCompile(`.*[-_]cgw.*`).MatchString(siteUsage.Name)
+			metricTokens := strings.Split(siteUsage.Name, ",")
+
+			sourceSite := metricTokens[0]
+			destinationSite := metricTokens[1]
+
+			// Only insert IP SLA to Controllers and Service Gateway
+			ctrlRegexp := regexp.MustCompile(`^CTLR-.+`).MatchString(destinationSite)
+			cgwRegexp := regexp.MustCompile(`.*[-_]cgw.*`).MatchString(destinationSite)
 
 			if !ctrlRegexp || !cgwRegexp {
 				continue
 			}
 
-			metricTokens := strings.Split(siteUsage.Name, ",")
-
-			sourceSite := metricTokens[0]
-			destinationSite := metricTokens[1]
 			sourceCircuit := metricTokens[2]
 			destinationCircuit := metricTokens[3]
 
