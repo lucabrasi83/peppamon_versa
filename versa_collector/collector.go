@@ -389,7 +389,7 @@ func (v *VersaAnalyticsExporter) versaSiteSLAMetrics() {
 			ctrlRegexp := regexp.MustCompile(`^CTLR-.+`).MatchString(destinationSite)
 			cgwRegexp := regexp.MustCompile(`.*[-_]cgw.*`).MatchString(destinationSite)
 
-			if !ctrlRegexp || !cgwRegexp {
+			if !ctrlRegexp && !cgwRegexp {
 				continue
 			}
 
