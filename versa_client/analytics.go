@@ -522,6 +522,7 @@ func (v *VersaAnalyticsClient) GetSitesCircuitBandwidthUsage() ([]VersaSiteBandw
 			if tenantsRes.StatusCode != http.StatusOK || tenantsRes.StatusCode > http.StatusAccepted {
 				logging.PeppaMonLog("error", "Versa Analytics responded with HTTP error code %v for %v",
 					tenantsRes.StatusCode, queryTitle)
+				return
 			}
 
 			defer func() {
@@ -605,6 +606,7 @@ func (v *VersaAnalyticsClient) GetSitesSLAMetrics() ([]VersaSiteSLAMetrics, erro
 			if tenantsRes.StatusCode != http.StatusOK || tenantsRes.StatusCode > http.StatusAccepted {
 				logging.PeppaMonLog("error", "Versa Analytics responded with HTTP error code %v for %v",
 					tenantsRes.StatusCode, queryTitle)
+				return
 			}
 
 			defer func() {
